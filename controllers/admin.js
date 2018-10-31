@@ -1,4 +1,5 @@
-const Product = require("../models/product");
+const Product = require('../models/product');
+
 
 exports.getAddProduct = (req, res, next) => {
     res.render('admin/edit-product', 
@@ -14,16 +15,11 @@ exports.postAddProduct = (req, res, next) => {
     const title = req.body.title,
           imageUrl = req.body.imageUrl,
           description = req.body.description,
-          price = req.body.price;
-    // sequelize createProduct for User hasMany Product (Product belongsTo User) relationship
-    // this way will automatically create a connected model
-    req.user
-        .createProduct({
-            title: title,
-            price: price,
-            imageUrl: imageUrl,
-            description: description
-        })
+          price = req.body.price,
+          product = new Product(title, price, description, imageUrl);
+
+    product
+        .save()
         .then(result => {
             console.log('Created Product');
             res.redirect('/admin/products');
@@ -31,6 +27,7 @@ exports.postAddProduct = (req, res, next) => {
         .catch(err => {
             console.log(err);
         });
+   
 }
 
 exports.getEditProduct = (req, res, next) => {
@@ -39,11 +36,8 @@ exports.getEditProduct = (req, res, next) => {
         return res.redirect('/');
     }
     const prodId = req.params.productId;
-    req.user
-        .getProducts({where: {id: prodId}})
-    // Product.findById(prodId)
-        .then(products => {
-            const product = products[0];
+    Product.findById(prodId)
+        .then(product => {
             if (!product) {
                 return res.redirect('/');
             }
@@ -65,17 +59,12 @@ exports.postEditProduct = (req, res, next) => {
     const prodId = req.body.productId,
           updatedTitle = req.body.title,
           updatedPrice = req.body.price,
-          updatedImageUrl = req.body.imageUrl,
-          updatedDescription = req.body.description;
-    
-    Product.findById(prodId)
-        .then(product => {
-            product.title = updatedTitle;
-            product.price = updatedPrice;
-            product.imageUrl = updatedImageUrl;
-            product.description = updatedDescription;
-            return product.save();
-        })
+          updatedDescription = req.body.description,
+          updatedImageUrl = req.body.imageUrl;
+              
+    const product = new Product(updatedTitle, updatedPrice, updatedDescription, updatedImageUrl, prodId);
+    product
+        .save()
         .then(result => {
             console.log('UPDATED PRODUCT');
             res.redirect('/admin/products');
@@ -87,12 +76,9 @@ exports.postEditProduct = (req, res, next) => {
 
 exports.postDeleteProduct = (req, res, next) => {
     const prodId = req.body.productId;
-    Product.findById(prodId)
-        .then(product => {
-           return product.destroy();
-        })
-        .then(result => {
-            console.log('PRODUCT DESTROYED');
+    Product.deleteById(prodId)
+        .then(() => {
+            console.log('Product Deleted');
             res.redirect('/admin/products');
         })
         .catch(err => {
@@ -101,8 +87,7 @@ exports.postDeleteProduct = (req, res, next) => {
 };
 
 exports.getProducts = (req, res, next) => {
-    req.user
-        .getProducts()
+    Product.fetchAll()
         // Product.findAll()
         .then(products => {
             res.render('admin/products', 
