@@ -4,12 +4,13 @@ const getDb = require('../util/database').getDb;
 
 
 class Product {
-    constructor(title, price, description, imageUrl, id) {
+    constructor(title, price, description, imageUrl, id, userId) {
         this.title = title;
         this.price = price;
         this.description = description;
         this.imageUrl = imageUrl;
         this._id = id ? new mongodb.ObjectId(id) : null;
+        this.userId = userId;
     }
 
     save() {
@@ -25,7 +26,7 @@ class Product {
       
         return dbOp
             .then(result => {
-                console.log(result);
+                console.log('Product created');
             })
             .catch(err => {
                 console.log(err);
@@ -51,7 +52,6 @@ class Product {
             // find returns a cursor, toArray if you know you won't be returning too many documents
             .find().toArray()
             .then(products => {
-                console.log(products);
                 return products;
             })
             .catch(err => {
@@ -62,11 +62,10 @@ class Product {
     static findById(prodId) {
         const db = getDb();
         return db.collection('products')
-            // find returns a cursor
+            // find returns a cursor, use next to get to first element
             .find({_id: new mongodb.ObjectId(prodId)})
             .next()
             .then(product => {
-                console.log(product);
                 return product;
             })
             .catch(err => {
