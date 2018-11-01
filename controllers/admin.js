@@ -17,7 +17,13 @@ exports.postAddProduct = (req, res, next) => {
           description = req.body.description,
           price = req.body.price,
           userId = req.user._id,
-          product = new Product(title, price, description, imageUrl, null, userId);
+          product = new Product({
+              title: title,
+              price: price,
+              description: description,
+              imageUrl: imageUrl,
+              userId: userId
+          });
     product
         .save()
         .then(result => {
@@ -62,21 +68,27 @@ exports.postEditProduct = (req, res, next) => {
           updatedDescription = req.body.description,
           updatedImageUrl = req.body.imageUrl;
               
-    const product = new Product(updatedTitle, updatedPrice, updatedDescription, updatedImageUrl, prodId);
-    product
-        .save()
+    Product.findById(prodId)
+        .then(product => {
+            product.title = updatedTitle;
+            product.price = updatedPrice;
+            product.description = updatedDescription;
+            product.imageUrl = updatedImageUrl
+            // mongoose save will automatically check if product already exists and update the existing product instead of creating a new one
+            return product.save();
+        })
         .then(result => {
             console.log('UPDATED PRODUCT');
             res.redirect('/admin/products');
         })
         .catch(err => { 
-            console.log(err 
-        )});
+            console.log(err);
+        });
 };
 
 exports.postDeleteProduct = (req, res, next) => {
     const prodId = req.body.productId;
-    Product.deleteById(prodId)
+    Product.findByIdAndRemove(prodId)
         .then(() => {
             console.log('Product Deleted');
             res.redirect('/admin/products');
@@ -87,8 +99,11 @@ exports.postDeleteProduct = (req, res, next) => {
 };
 
 exports.getProducts = (req, res, next) => {
-    Product.fetchAll()
-        // Product.findAll()
+    Product.find()
+        // .select allows you to choose which fields to display or which fields to remove from display
+        // .populate allows you to fetch the full set of data from a reference id, and also pick which fields to display as a second arg
+        // .select('title price -_id')
+        // .populate('userId', 'name')
         .then(products => {
             res.render('admin/products', 
             {
