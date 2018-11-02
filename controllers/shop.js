@@ -9,7 +9,8 @@ exports.getIndex = (req, res, next) => {
                 {
                     pageTitle: 'Shop', 
                     prods: products, 
-                    path: '/', 
+                    path: '/',
+                    isAuthenticated: req.session.isLoggedIn
                 }
             )           
         })
@@ -19,13 +20,15 @@ exports.getIndex = (req, res, next) => {
 }
 
 exports.getProducts = (req, res, next) => {
+    console.log(req.user);
     Product.find()
         .then(products => {
             res.render('shop/product-list', 
                 {
                     pageTitle: 'All products', 
                     prods: products, 
-                    path: '/products', 
+                    path: '/products',
+                    isAuthenticated: req.session.isLoggedIn
                 }
             )           
         })
@@ -44,8 +47,9 @@ exports.getProduct = (req, res, next) => {
                 {
                     product: product,
                     pageTitle: product.title,
-                    path: '/products'
-                }
+                    path: '/products',
+                    isAuthenticated: req.session.isLoggedIn
+                },
             )
         })
         .catch(err => {
@@ -63,7 +67,8 @@ exports.getCart = (req, res, next) => {
                 {
                     pageTitle: 'Your Cart',
                     path: '/cart',
-                    products: products
+                    products: products,
+                    isAuthenticated: req.session.isLoggedIn
                 }    
             )
         })
@@ -136,7 +141,8 @@ exports.getOrders = (req, res, next) => {
                 {
                     pageTitle: 'Your Orders',
                     path: '/orders',
-                    orders: orders
+                    orders: orders,
+                    isAuthenticated: req.session.isLoggedIn
                 }
             )
         })
@@ -144,13 +150,3 @@ exports.getOrders = (req, res, next) => {
             console.log(err);
         })
 }
-
-exports.getCheckout = (req, res, next) => {
-    res.render('shop/checkout', 
-        {
-            path: '/checkout',
-            pageTitle: 'Checkout'
-        }
-    )
-}
-
