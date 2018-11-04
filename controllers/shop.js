@@ -9,8 +9,7 @@ exports.getIndex = (req, res, next) => {
                 {
                     pageTitle: 'Shop', 
                     prods: products, 
-                    path: '/',
-                    isAuthenticated: req.session.isLoggedIn
+                    path: '/'
                 }
             )           
         })
@@ -27,8 +26,7 @@ exports.getProducts = (req, res, next) => {
                 {
                     pageTitle: 'All products', 
                     prods: products, 
-                    path: '/products',
-                    isAuthenticated: req.session.isLoggedIn
+                    path: '/products'
                 }
             )           
         })
@@ -47,8 +45,7 @@ exports.getProduct = (req, res, next) => {
                 {
                     product: product,
                     pageTitle: product.title,
-                    path: '/products',
-                    isAuthenticated: req.session.isLoggedIn
+                    path: '/products'
                 },
             )
         })
@@ -67,8 +64,7 @@ exports.getCart = (req, res, next) => {
                 {
                     pageTitle: 'Your Cart',
                     path: '/cart',
-                    products: products,
-                    isAuthenticated: req.session.isLoggedIn
+                    products: products
                 }    
             )
         })
@@ -116,7 +112,7 @@ exports.postOrder = (req, res, next) => {
             const order = new Order({
                 products: products,
                 user: {
-                    name: req.user.name,
+                    email: req.user.email,
                     userId: req.user._id
                 }  
             });
@@ -141,8 +137,7 @@ exports.getOrders = (req, res, next) => {
                 {
                     pageTitle: 'Your Orders',
                     path: '/orders',
-                    orders: orders,
-                    isAuthenticated: req.session.isLoggedIn
+                    orders: orders
                 }
             )
         })
