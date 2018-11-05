@@ -18,6 +18,17 @@ const store = new MongoDBStore({
     uri: MONGODB_URI,
     collection: 'sessions'
 });
+
+// common status codes
+// 200 -> Operation succeeded
+// 201 -> Success, resource created
+// 301 -> Moved permananently
+// 401 -> Not authenticated
+// 403 -> Not authorized
+// 404 -> Not found
+// 422 -> Invalid input
+// 500 -> Server-side error
+
 // csrf checks POST requests in our views since they generally involve data changes
 const csrfProtection = csrf();
 
@@ -38,21 +49,6 @@ app.use(csrfProtection);
 app.use(flash());
 
 app.use((req, res, next) => {
-    if(!req.session.user) {
-        // return next so code below will not be executed
-        return next();
-    }
-    User.findById(req.session.user._id)
-        .then(user => {
-            req.user = user;
-            next();
-        })
-        .catch(err => {
-            console.log(err);
-        });  
-})
-
-app.use((req, res, next) => {
     // included in every rendered view using 'locals' field provided by express
     // passing local variables into every view rendered
     res.locals.isAuthenticated = req.session.isLoggedIn;
@@ -60,11 +56,42 @@ app.use((req, res, next) => {
     next();
 })
 
+app.use((req, res, next) => {
+    if(!req.session.user) {
+        // return next so code below will not be executed
+        return next();
+    }
+    User.findById(req.session.user._id)
+        .then(user => {
+            if (!user) {
+                return next();
+            }
+            req.user = user;
+            next();
+        })
+        .catch(err => {
+            // inside async code need to use next(new Error(err));
+            // outside of async code, throw new Error('Dummy Error');
+            next(new Error(err));
+        });  
+})
+
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
 
+app.use('/500', errorController.get500);
+
 app.use(errorController.get404);
+
+// if next(error) is called anywhere in app, express will skip other middleware and come directly to this special error handling middleware
+// multiple error handling middlewares are called top to bottom as per usual
+app.use((error, req, res, next) => {
+    res.status(500).render('500', {
+        pageTitle: '500 Server Error', 
+        path: '/500'
+    });
+});
 
 mongoose
     .connect(
