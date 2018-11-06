@@ -6,34 +6,64 @@ const PDFDocument = require('pdfkit');
 const Product = require('../models/product');
 const Order = require('../models/order');
 
+const ITEMS_PER_PAGE = 1;
+
 exports.getIndex = (req, res, next) => {
-    // mongoose .find() gives us the products unlike mongodb which gives back a cursor
-    Product.find()
-        .then(products => {
-            res.render('shop/index', 
-                {
-                    pageTitle: 'Shop', 
-                    prods: products, 
-                    path: '/'
-                }
-            )           
-        })
-        .catch(err => {
-            const error = new Error(err);
-            error.httpStatusCode = 500;
-            return next(error);
-        });
+    const page = +req.query.page || 1;
+    let totalItems;
+
+    Product.find().countDocuments().then(numProducts => {
+        totalItems = numProducts;
+        // mongoose .find() gives us the products unlike mongodb which gives back a cursor
+        return Product.find()
+            .skip((page - 1) * ITEMS_PER_PAGE)
+            .limit(ITEMS_PER_PAGE)
+    })
+    .then(products => {
+        res.render('shop/index', 
+            {
+                pageTitle: 'Shop', 
+                prods: products, 
+                path: '/',
+                currentPage: page,
+                hasNextPage: ITEMS_PER_PAGE * page < totalItems,
+                hasPreviousPage: page > 1,
+                nextPage: page + 1,
+                previousPage: page - 1,
+                lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE)
+            }
+        )           
+    })
+    .catch(err => {
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
+    });
 }
 
 exports.getProducts = (req, res, next) => {
-    console.log(req.user);
-    Product.find()
+        const page = +req.query.page || 1;
+        let totalItems;
+
+        Product.find().countDocuments().then(numProducts => {
+            totalItems = numProducts;
+            // mongoose .find() gives us the products unlike mongodb which gives back a cursor
+            return Product.find()
+                .skip((page - 1) * ITEMS_PER_PAGE)
+                .limit(ITEMS_PER_PAGE)
+        })
         .then(products => {
             res.render('shop/product-list', 
                 {
-                    pageTitle: 'All products', 
+                    pageTitle: 'Products', 
                     prods: products, 
-                    path: '/products'
+                    path: '/products',
+                    currentPage: page,
+                    hasNextPage: ITEMS_PER_PAGE * page < totalItems,
+                    hasPreviousPage: page > 1,
+                    nextPage: page + 1,
+                    previousPage: page - 1,
+                    lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE)
                 }
             )           
         })
