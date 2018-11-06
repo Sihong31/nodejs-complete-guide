@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const fileHelper = require('../util/file');
 
 const { validationResult } = require('express-validator/check');
 
@@ -19,19 +20,29 @@ exports.getAddProduct = (req, res, next) => {
 
 exports.postAddProduct = (req, res, next) => {
     const title = req.body.title,
-          imageUrl = req.body.imageUrl,
+          image = req.file,
           description = req.body.description,
           price = req.body.price,
           userId = req.user._id,
-          product = new Product({
-            //   _id: mongoose.Types.ObjectId('5be0c0b43004f82f8cc8af2d'),
-              title: title,
-              price: price,
-              description: description,
-              imageUrl: imageUrl,
-              userId: userId
-          }),
           errors = validationResult(req);
+    
+    if (!image) {
+        return res.status(422).render('admin/edit-product', 
+        {
+            pageTitle: 'Add Product',   
+            path:'/admin/add-product',
+            editing: false,
+            hasError: true,
+            product: {
+                title: title,
+                price: price,
+                description: description
+            },
+            errorMessage: 'Attached file is not an image',
+            validationErrors: errors.array()
+        });
+    }
+          
     if (!errors.isEmpty()) {
         return res.status(422).render('admin/edit-product', 
         {
@@ -41,7 +52,6 @@ exports.postAddProduct = (req, res, next) => {
             hasError: true,
             product: {
                 title: title,
-                imageUrl: imageUrl,
                 price: price,
                 description: description
             },
@@ -49,6 +59,18 @@ exports.postAddProduct = (req, res, next) => {
             validationErrors: errors.array()
         });
     }
+
+    const imageUrl = image.path;
+
+    const product = new Product({
+        //   _id: mongoose.Types.ObjectId('5be0c0b43004f82f8cc8af2d'),
+            title: title,
+            price: price,
+            description: description,
+            imageUrl: imageUrl,
+            userId: userId
+        });
+
     product
         .save()
         .then(result => {
@@ -113,7 +135,7 @@ exports.postEditProduct = (req, res, next) => {
           updatedTitle = req.body.title,
           updatedPrice = req.body.price,
           updatedDescription = req.body.description,
-          updatedImageUrl = req.body.imageUrl,
+          image = req.file,
           errors = validationResult(req);
 
         if (!errors.isEmpty()) {
@@ -125,7 +147,6 @@ exports.postEditProduct = (req, res, next) => {
                 hasError: true,
                 product: {
                     title: updatedTitle,
-                    imageUrl: updatedImageUrl,
                     price: updatedPrice,
                     description: updatedDescription,
                     _id: prodId
@@ -141,8 +162,11 @@ exports.postEditProduct = (req, res, next) => {
             }
             product.title = updatedTitle;
             product.price = updatedPrice;
-            product.description = updatedDescription;
-            product.imageUrl = updatedImageUrl
+            product.description = updatedDescription; 
+            if (image) {
+                fileHelper.deleteFile(product.imageUrl);
+                product.imageUrl = image.path;
+            }
             // mongoose save will automatically check if product already exists and update the existing product instead of creating a new one
             return product.save().then(result => {
                 console.log('UPDATED PRODUCT');
@@ -158,7 +182,14 @@ exports.postEditProduct = (req, res, next) => {
 
 exports.postDeleteProduct = (req, res, next) => {
     const prodId = req.body.productId;
-    Product.deleteOne({_id: prodId, userId: req.user._id})
+    Product.findById(prodId)
+        .then(product => {
+            if (!product) {
+                return next(new Error('Product not found!'));
+            }
+            fileHelper.deleteFile(product.imageUrl);
+            return Product.deleteOne({_id: prodId, userId: req.user._id})
+        })
         .then(() => {
             console.log('Product Deleted');
             res.redirect('/admin/products');
