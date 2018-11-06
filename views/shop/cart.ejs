@@ -21,11 +21,12 @@
                 </ul>
                 <hr>
                 <div class="centered">
-                    <form action="/create-order" method="POST">
-                        <!-- csrf package will look for name of "_csrf" -->
+                    <!-- csrf package will look for name of "_csrf" -->
+                    <!-- <form action="/create-order" method="POST"> 
                         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                         <button class="btn" type="submit">Order Now!</button>
-                    </form>
+                    </form> -->
+                    <a class="btn" href="/checkout">Order now!</a>
                 </div>
             <% } else { %>
                 <h1>No products in cart!</h1>

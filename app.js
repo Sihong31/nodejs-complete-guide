@@ -12,6 +12,9 @@ const multer = require('multer');
 const errorController = require('./controllers/error');
 const User = require('./models/user');
 
+const shopController = require("./controllers/shop");
+const isAuth = require('./middleware/is-auth');
+
 const MONGODB_URI = 'MY CONNECTION';
 
 const app = express();
@@ -63,7 +66,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/images', express.static(path.join(__dirname, 'images')));
 // secret should be a long string value in production
 app.use(session({secret: 'my secret', resave: false, saveUninitialized: false, store: store}));
-app.use(csrfProtection);
 // use flash() after session is stored
 // flash is for showing 'flash' error messages
 app.use(flash());
@@ -72,7 +74,6 @@ app.use((req, res, next) => {
     // included in every rendered view using 'locals' field provided by express
     // passing local variables into every view rendered
     res.locals.isAuthenticated = req.session.isLoggedIn;
-    res.locals.csrfToken = req.csrfToken();
     next();
 })
 
@@ -96,6 +97,14 @@ app.use((req, res, next) => {
         });  
 })
 
+app.post('/create-order', isAuth, shopController.postOrder);
+
+app.use(csrfProtection);
+app.use((req, res, next) => {
+    res.locals.csrfToken = req.csrfToken();
+    next();
+})
+
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
@@ -107,6 +116,7 @@ app.use(errorController.get404);
 // if next(error) is called anywhere in app, express will skip other middleware and come directly to this special error handling middleware
 // multiple error handling middlewares are called top to bottom as per usual
 app.use((error, req, res, next) => {
+    console.log(error);
     // res.redirect('/500');
     res.status(500).render('500', {
         pageTitle: '500 Server Error', 
