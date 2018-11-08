@@ -64,6 +64,12 @@ mongoose
     'MY CONNECTION'
   )
   .then(result => {
-    app.listen(8080);
+    const server = app.listen(8080);
+    const io = require('./socket').init(server);
+    // need to install socket.io package on both backend and frontend apps
+    // socket.io-client on frontend, socket.io on backend
+    io.on('connection', socket => {
+      console.log('Client connected');
+    });
   })
   .catch(err => console.log(err));
