@@ -4,9 +4,10 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const multer = require('multer');
+const graphqlHttp = require('express-graphql');
 
-const feedRoutes = require('./routes/feed');
-const authRoutes = require('./routes/auth');
+const graphqlSchema = require('./graphql/schema');
+const graphqlResolver = require('./graphql/resolvers');
 
 const app = express();
 
@@ -48,8 +49,20 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/feed', feedRoutes);
-app.use('/auth', authRoutes);
+app.use('/graphql', graphqlHttp({
+  schema: graphqlSchema,
+  rootValue: graphqlResolver,
+  graphiql: true,
+  formatError(err) {
+    if (!err.originalError) {
+      return err;
+    }
+    const data = err.originalError.data;
+    const message = err.message || 'An error occurred';
+    const code = err.originalError.code || 500;
+    return { message: message, status: code, data: data};
+  }
+}));
 
 app.use((error, req, res, next) => {
   console.log(error);
@@ -64,12 +77,6 @@ mongoose
     'MY CONNECTION'
   )
   .then(result => {
-    const server = app.listen(8080);
-    const io = require('./socket').init(server);
-    // need to install socket.io package on both backend and frontend apps
-    // socket.io-client on frontend, socket.io on backend
-    io.on('connection', socket => {
-      console.log('Client connected');
-    });
+    app.listen(8080);
   })
   .catch(err => console.log(err));
